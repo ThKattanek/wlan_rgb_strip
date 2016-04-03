@@ -42,6 +42,11 @@ volatile char NewUARTString = 0;
 
 volatile unsigned char r,g,b;
 
+#define SINGLE_COLOR_MODE 0
+#define GARDIENT_MODE 1    
+
+volatile unsigned char color_mode = SINGLE_COLOR_MODE;
+
 const uint16_t pwmtable_8[32] PROGMEM =
 {
     0, 1, 2, 2, 2, 3, 3, 4, 5, 6, 7, 8, 10, 11, 13, 16, 19, 23,
@@ -96,66 +101,64 @@ int main(void)
 
     while( 1 )
     {   
-	/*
-	if(wait_count0 == 0)
+	switch(color_mode)
 	{
-	    switch(step)
-	    {
-	    case 0:
-		g++;
-		if(g==255) step = 1;
+	    case SINGLE_COLOR_MODE:
 		break;
+		
+	    case GARDIENT_MODE:
+		if(wait_count0 == 0)
+		{
+		    switch(step)
+		    {
+		    case 0:
+			g++;
+			if(g==255) step = 1;
+			break;
 
-	    case 1:
-		r--;
-		if(r==1) step = 2;
-		break;
+		    case 1:
+			r--;
+			if(r==1) step = 2;
+			break;
 
-	    case 2:
-		g--;
-		b++;
-		if(b==255) step = 3;
-		break;
+		    case 2:
+			g--;
+			b++;
+			if(b==255) step = 3;
+			break;
 
-	    case 3:
-		b--;
-		r++;
-		if(r==255) step = 0;
+		    case 3:
+			b--;
+			r++;
+			if(r==255) step = 0;
+			break;
+		    }
+		    SetRGB(r, g, b);
+		}
+		wait_count0++;
 		break;
-	    }
-	    SetRGB(r, g, b);
 	}
-	wait_count0++;
-	*/
 	
 	if(CheckNewString(IncomingString))
 	{
-	   char buffer[5];
-	   	   
-	   for(char i=0; i<4; i++)
-	    buffer[i] = IncomingString[i];
-	   buffer[4] = 0;
-	   
-	   if(strcmp(buffer,"+IPD") == 0)
-	   {
+	    char buffer[5];
+		    
+	    for(char i=0; i<4; i++)
+		buffer[i] = IncomingString[i];
+	    buffer[4] = 0;
+	    
+	    if(strcmp(buffer,"+IPD") == 0)
+	    {
 
-	       unsigned char i=4;
-	       while((IncomingString[i++] != ':') && i < MAX_UART_STRING-1){};
-	       
-               unsigned char* cmd_string = (unsigned char*)IncomingString + i;
+		unsigned char i=4;
+		while((IncomingString[i++] != ':') && i < MAX_UART_STRING-1){};
+		
+		unsigned char* cmd_string = (unsigned char*)IncomingString + i;
 
-               ExecuteCommand(cmd_string);
-
-               /*
-               switch(cmd_string[0])
-	       {
-		   case 0x80:
-                       SetRGB(cmd_string[1],cmd_string[2],cmd_string[3]);
-		       break;
-	       }
-               */
-	   }
+		ExecuteCommand(cmd_string);
+	    }
 	}
+	
     }  
 }
 
@@ -338,5 +341,13 @@ void ExecuteCommand(unsigned char* cmd_string)
         if(strcmp(value_string,"off") == 0)
             b=0;
         SetRGB(r,g,b);
+    }
+    
+    if(strcmp(cmd_string,"colormode") == 0)
+    {
+        if(strcmp(value_string,"singlecolor") == 0)
+            color_mode = SINGLE_COLOR_MODE;
+        if(strcmp(value_string,"gardient") == 0)
+            color_mode = GARDIENT_MODE;
     }
 }
