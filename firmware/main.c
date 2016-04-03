@@ -41,6 +41,9 @@ volatile unsigned char UARTStringLen = 0;
 volatile char NewUARTString = 0;
 
 volatile unsigned char r,g,b;
+volatile unsigned char step = 0;
+
+volatile unsigned short gardient_speed = 15000;
 
 #define SINGLE_COLOR_MODE 0
 #define GARDIENT_MODE 1    
@@ -56,10 +59,8 @@ const uint16_t pwmtable_8[32] PROGMEM =
 int main(void)
 { 
     char IncomingString[MAX_UART_STRING];
-
-
-    unsigned char step = 0;
-    unsigned char wait_count0 = 0;
+    
+    unsigned short wait_count0 = 0;
 
     DDRC = 0x0f;
     PORTC = 0x00;
@@ -95,10 +96,6 @@ int main(void)
     
     PORTC |= 0x02;
     
-    // Startfarbe für Farbverlauf
-    r = g = b = 0;
-    //r = 255;
-
     while( 1 )
     {   
 	switch(color_mode)
@@ -107,8 +104,10 @@ int main(void)
 		break;
 		
 	    case GARDIENT_MODE:
-		if(wait_count0 == 0)
+		if(wait_count0 == gardient_speed)
 		{
+		    wait_count0 = 0;
+		    
 		    switch(step)
 		    {
 		    case 0:
@@ -273,7 +272,7 @@ void ExecuteCommand(unsigned char* cmd_string)
     // Command Maximal 16 Zeichen
     // Value Maximal 16 Zeichen
 
-#define CMD_MAX_LEN 16
+#define CMD_MAX_LEN 32
 
     unsigned char* value_string;
     unsigned char i = 0;
@@ -348,6 +347,25 @@ void ExecuteCommand(unsigned char* cmd_string)
         if(strcmp(value_string,"singlecolor") == 0)
             color_mode = SINGLE_COLOR_MODE;
         if(strcmp(value_string,"gardient") == 0)
+	{
+	    step = 0;
+	    
+	    // Startfarbe für Farbverlauf
+	    r = 255;
+	    g = b = 0;
             color_mode = GARDIENT_MODE;
+	}
+    }
+    
+    if(strcmp(cmd_string,"gardientspeed") == 0)
+    {
+        int v;
+        if((value_string[0] >= '0' && value_string[0] <= '9') || value_string[0] == '-')
+        {
+            // Als Zahl identifiziert
+            v = atoi(value_string);
+	    gardient_speed = v;
+        }
+	
     }
 }
