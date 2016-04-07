@@ -45,8 +45,11 @@ volatile unsigned char step = 0;
 
 volatile unsigned short gardient_speed = 15000;
 
+volatile unsigned char strobe_state = 0;
+
 #define SINGLE_COLOR_MODE 0
-#define GARDIENT_MODE 1    
+#define GARDIENT_MODE 1   
+#define STROBE_MODE 2
 
 volatile unsigned char color_mode = SINGLE_COLOR_MODE;
 
@@ -133,6 +136,22 @@ int main(void)
 			break;
 		    }
 		    SetRGB(r, g, b);
+		}
+		wait_count0++;
+		break;
+	    case STROBE_MODE:
+		if(wait_count0 == gardient_speed)
+		{
+		    wait_count0 = 0;
+		    if(strobe_state & 1)
+		    {
+			SetRGB(0,0,0);
+		    }
+		    else
+		    {
+			SetRGB(255,255,255);
+		    }
+		    strobe_state++;
 		}
 		wait_count0++;
 		break;
@@ -355,6 +374,8 @@ void ExecuteCommand(unsigned char* cmd_string)
 	    g = b = 0;
             color_mode = GARDIENT_MODE;
 	}
+	if(strcmp(value_string,"strobe") == 0)
+	    color_mode = STROBE_MODE;
     }
     
     if(strcmp(cmd_string,"gardientspeed") == 0)
@@ -363,9 +384,8 @@ void ExecuteCommand(unsigned char* cmd_string)
         if((value_string[0] >= '0' && value_string[0] <= '9') || value_string[0] == '-')
         {
             // Als Zahl identifiziert
-            v = atoi(value_string);
+            v = (unsigned short)atoi(value_string);
 	    gardient_speed = v;
         }
-	
     }
 }
